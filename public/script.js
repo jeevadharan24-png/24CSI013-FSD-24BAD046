@@ -1,6 +1,9 @@
+const API_URL = "https://contact-management-backend-q3pf.onrender.com";
+
+// Load all contacts
 async function loadContacts() {
     try {
-        const response = await fetch("/contacts");
+        const response = await fetch(`${API_URL}/contacts`);
         const data = await response.json();
 
         const tableBody = document.getElementById("contactTableBody");
@@ -17,12 +20,19 @@ async function loadContacts() {
                 <td>${contact.phone}</td>
                 <td>${contact.email}</td>
                 <td>
-                    <button class="edit-btn"
-                        onclick="editContact('${contact._id}', '${contact.name}', '${contact.phone}', '${contact.email}')">
+                    <button 
+                        class="edit-btn"
+                        onclick="editContact(
+                            '${contact._id}',
+                            '${contact.name}',
+                            '${contact.phone}',
+                            '${contact.email}'
+                        )">
                         Edit
                     </button>
 
-                    <button class="delete-btn"
+                    <button 
+                        class="delete-btn"
                         onclick="deleteContact('${contact._id}')">
                         Delete
                     </button>
@@ -34,10 +44,12 @@ async function loadContacts() {
 
     } catch (error) {
         console.error("Error loading contacts:", error);
+        alert("Unable to connect to the server.");
     }
 }
 
 
+// Add new contact
 async function addContact() {
 
     const name = document.getElementById("name").value.trim();
@@ -49,20 +61,23 @@ async function addContact() {
         return;
     }
 
+    // Generate unique contact ID
     const contactId = "C" + Date.now();
 
     try {
 
-        const response = await fetch("/contacts", {
+        const response = await fetch(`${API_URL}/contacts`, {
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
-                contactId,
-                name,
-                phone,
-                email
+                contactId: contactId,
+                name: name,
+                phone: phone,
+                email: email
             })
         });
 
@@ -73,22 +88,30 @@ async function addContact() {
             return;
         }
 
+        alert("Contact added successfully!");
+
+        // Clear input fields
         document.getElementById("name").value = "";
         document.getElementById("phone").value = "";
         document.getElementById("email").value = "";
 
+        // Reload contacts
         loadContacts();
 
     } catch (error) {
-        console.error(error);
-        alert("Server error");
+
+        console.error("Error:", error);
+        alert("Server error. Please try again.");
     }
 }
 
 
+// Delete contact
 async function deleteContact(id) {
 
-    const confirmDelete = confirm("Are you sure you want to delete this contact?");
+    const confirmDelete = confirm(
+        "Are you sure you want to delete this contact?"
+    );
 
     if (!confirmDelete) {
         return;
@@ -96,7 +119,7 @@ async function deleteContact(id) {
 
     try {
 
-        const response = await fetch(`/contacts/${id}`, {
+        const response = await fetch(`${API_URL}/contacts/${id}`, {
             method: "DELETE"
         });
 
@@ -107,42 +130,72 @@ async function deleteContact(id) {
             return;
         }
 
+        alert("Contact deleted successfully!");
+
+        // Reload contacts
         loadContacts();
 
     } catch (error) {
-        console.error(error);
-        alert("Server error");
+
+        console.error("Error:", error);
+        alert("Server error. Please try again.");
     }
 }
 
 
-async function editContact(id, oldName, oldPhone, oldEmail) {
+// Edit contact
+async function editContact(
+    id,
+    oldName,
+    oldPhone,
+    oldEmail
+) {
 
-    const name = prompt("Enter name:", oldName);
+    const name = prompt(
+        "Enter name:",
+        oldName
+    );
 
-    if (name === null) return;
+    if (name === null) {
+        return;
+    }
 
-    const phone = prompt("Enter phone:", oldPhone);
+    const phone = prompt(
+        "Enter phone:",
+        oldPhone
+    );
 
-    if (phone === null) return;
+    if (phone === null) {
+        return;
+    }
 
-    const email = prompt("Enter email:", oldEmail);
+    const email = prompt(
+        "Enter email:",
+        oldEmail
+    );
 
-    if (email === null) return;
+    if (email === null) {
+        return;
+    }
 
     try {
 
-        const response = await fetch(`/contacts/${id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                name,
-                phone,
-                email
-            })
-        });
+        const response = await fetch(
+            `${API_URL}/contacts/${id}`,
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    name: name,
+                    phone: phone,
+                    email: email
+                })
+            }
+        );
 
         const data = await response.json();
 
@@ -151,13 +204,18 @@ async function editContact(id, oldName, oldPhone, oldEmail) {
             return;
         }
 
+        alert("Contact updated successfully!");
+
+        // Reload contacts
         loadContacts();
 
     } catch (error) {
-        console.error(error);
-        alert("Server error");
+
+        console.error("Error:", error);
+        alert("Server error. Please try again.");
     }
 }
 
 
+// Load contacts when page opens
 loadContacts();
