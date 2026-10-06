@@ -1,221 +1,185 @@
-const API_URL = "https://contact-management-backend-q3pf.onrender.com";
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
-// Load all contacts
-async function loadContacts() {
+const Contact = require("./models/Contact");
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+
+// MongoDB Connection
+mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log("MongoDB connected successfully");
+    })
+    .catch((error) => {
+        console.log("MongoDB connection error:", error.message);
+    });
+
+
+// Home Route
+app.get("/", (req, res) => {
+    res.status(200).json({
+        message: "Contact Management API is running"
+    });
+});
+
+
+// POST /contacts
+// Create a new contact
+app.post("/contacts", async (req, res) => {
     try {
-        const response = await fetch(`${API_URL}/contacts`);
-        const data = await response.json();
 
-        const tableBody = document.getElementById("contactTableBody");
+        const contact = new Contact(req.body);
 
-        tableBody.innerHTML = "";
+        const savedContact = await contact.save();
 
-        data.contacts.forEach((contact, index) => {
-
-            const row = document.createElement("tr");
-
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${contact.name}</td>
-                <td>${contact.phone}</td>
-                <td>${contact.email}</td>
-                <td>
-                    <button 
-                        class="edit-btn"
-                        onclick="editContact(
-                            '${contact._id}',
-                            '${contact.name}',
-                            '${contact.phone}',
-                            '${contact.email}'
-                        )">
-                        Edit
-                    </button>
-
-                    <button 
-                        class="delete-btn"
-                        onclick="deleteContact('${contact._id}')">
-                        Delete
-                    </button>
-                </td>
-            `;
-
-            tableBody.appendChild(row);
+        res.status(201).json({
+            message: "Contact created successfully",
+            contact: savedContact
         });
 
     } catch (error) {
-        console.error("Error loading contacts:", error);
-        alert("Unable to connect to the server.");
+
+        res.status(400).json({
+            message: "Error creating contact",
+            error: error.message
+        });
     }
-}
+});
 
 
-// Add new contact
-async function addContact() {
-
-    const name = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const email = document.getElementById("email").value.trim();
-
-    if (!name || !phone || !email) {
-        alert("Please fill all fields");
-        return;
-    }
-
-    // Generate unique contact ID
-    const contactId = "C" + Date.now();
-
+// GET /contacts
+// Get all contacts
+app.get("/contacts", async (req, res) => {
     try {
 
-        const response = await fetch(`${API_URL}/contacts`, {
-            method: "POST",
+        const contacts = await Contact.find();
 
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                contactId: contactId,
-                name: name,
-                phone: phone,
-                email: email
-            })
+        res.status(200).json({
+            count: contacts.length,
+            contacts: contacts
         });
 
-        const data = await response.json();
+    } catch (error) {
 
-        if (!response.ok) {
-            alert(data.error || "Error adding contact");
-            return;
+        res.status(500).json({
+            message: "Error fetching contacts",
+            error: error.message
+        });
+    }
+});
+
+
+// GET /contacts/:id
+// Get contact by MongoDB ID
+app.get("/contacts/:id", async (req, res) => {
+    try {
+
+        const contact = await Contact.findById(req.params.id);
+
+        if (!contact) {
+            return res.status(404).json({
+                message: "Contact not found"
+            });
         }
 
-        alert("Contact added successfully!");
-
-        // Clear input fields
-        document.getElementById("name").value = "";
-        document.getElementById("phone").value = "";
-        document.getElementById("email").value = "";
-
-        // Reload contacts
-        loadContacts();
-
-    } catch (error) {
-
-        console.error("Error:", error);
-        alert("Server error. Please try again.");
-    }
-}
-
-
-// Delete contact
-async function deleteContact(id) {
-
-    const confirmDelete = confirm(
-        "Are you sure you want to delete this contact?"
-    );
-
-    if (!confirmDelete) {
-        return;
-    }
-
-    try {
-
-        const response = await fetch(`${API_URL}/contacts/${id}`, {
-            method: "DELETE"
+        res.status(200).json({
+            contact: contact
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.error || "Error deleting contact");
-            return;
-        }
-
-        alert("Contact deleted successfully!");
-
-        // Reload contacts
-        loadContacts();
-
     } catch (error) {
 
-        console.error("Error:", error);
-        alert("Server error. Please try again.");
+        res.status(400).json({
+            message: "Invalid contact ID",
+            error: error.message
+        });
     }
-}
+});
 
 
-// Edit contact
-async function editContact(
-    id,
-    oldName,
-    oldPhone,
-    oldEmail
-) {
-
-    const name = prompt(
-        "Enter name:",
-        oldName
-    );
-
-    if (name === null) {
-        return;
-    }
-
-    const phone = prompt(
-        "Enter phone:",
-        oldPhone
-    );
-
-    if (phone === null) {
-        return;
-    }
-
-    const email = prompt(
-        "Enter email:",
-        oldEmail
-    );
-
-    if (email === null) {
-        return;
-    }
-
+// PUT /contacts/:id
+// Update contact
+app.put("/contacts/:id", async (req, res) => {
     try {
 
-        const response = await fetch(
-            `${API_URL}/contacts/${id}`,
+        const updatedContact = await Contact.findByIdAndUpdate(
+            req.params.id,
+            req.body,
             {
-                method: "PUT",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    name: name,
-                    phone: phone,
-                    email: email
-                })
+                new: true,
+                runValidators: true
             }
         );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.error || "Error updating contact");
-            return;
+        if (!updatedContact) {
+            return res.status(404).json({
+                message: "Contact not found"
+            });
         }
 
-        alert("Contact updated successfully!");
-
-        // Reload contacts
-        loadContacts();
+        res.status(200).json({
+            message: "Contact updated successfully",
+            contact: updatedContact
+        });
 
     } catch (error) {
 
-        console.error("Error:", error);
-        alert("Server error. Please try again.");
+        res.status(400).json({
+            message: "Error updating contact",
+            error: error.message
+        });
     }
-}
+});
 
 
-// Load contacts when page opens
-loadContacts();
+// DELETE /contacts/:id
+// Delete contact
+app.delete("/contacts/:id", async (req, res) => {
+    try {
+
+        const deletedContact = await Contact.findByIdAndDelete(
+            req.params.id
+        );
+
+        if (!deletedContact) {
+            return res.status(404).json({
+                message: "Contact not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Contact deleted successfully",
+            contact: deletedContact
+        });
+
+    } catch (error) {
+
+        res.status(400).json({
+            message: "Error deleting contact",
+            error: error.message
+        });
+    }
+});
+
+
+// Handle unknown routes
+app.use((req, res) => {
+    res.status(404).json({
+        message: "Route not found"
+    });
+});
+
+
+// Start Server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
