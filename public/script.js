@@ -11,7 +11,6 @@ const app = express();
 // Middleware
 // =========================
 
-// Allow requests from ByteXL and other frontend applications
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -31,7 +30,7 @@ mongoose
         console.log("MongoDB connected successfully");
     })
     .catch((error) => {
-        console.log("MongoDB connection error:", error.message);
+        console.error("MongoDB connection error:", error.message);
     });
 
 
@@ -54,7 +53,26 @@ app.get("/", (req, res) => {
 
 app.post("/contacts", async (req, res) => {
     try {
-        const contact = new Contact(req.body);
+        const { contactId, name, phone, email } = req.body;
+
+        if (!contactId || !name || !phone || !email) {
+            return res.status(400).json({
+                message: "All fields are required",
+                requiredFields: [
+                    "contactId",
+                    "name",
+                    "phone",
+                    "email"
+                ]
+            });
+        }
+
+        const contact = new Contact({
+            contactId,
+            name,
+            phone,
+            email
+        });
 
         const savedContact = await contact.save();
 
@@ -64,6 +82,17 @@ app.post("/contacts", async (req, res) => {
         });
 
     } catch (error) {
+
+        // Duplicate contactId or email
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyPattern)[0];
+
+            return res.status(409).json({
+                message: `${duplicateField} already exists`,
+                error: error.message
+            });
+        }
+
         res.status(400).json({
             message: "Error creating contact",
             error: error.message
@@ -83,7 +112,7 @@ app.get("/contacts", async (req, res) => {
 
         res.status(200).json({
             count: contacts.length,
-            contacts: contacts
+            contacts
         });
 
     } catch (error) {
@@ -111,7 +140,7 @@ app.get("/contacts/:id", async (req, res) => {
         }
 
         res.status(200).json({
-            contact: contact
+            contact
         });
 
     } catch (error) {
@@ -151,6 +180,16 @@ app.put("/contacts/:id", async (req, res) => {
         });
 
     } catch (error) {
+
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyPattern)[0];
+
+            return res.status(409).json({
+                message: `${duplicateField} already exists`,
+                error: error.message
+            });
+        }
+
         res.status(400).json({
             message: "Error updating contact",
             error: error.message
