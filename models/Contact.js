@@ -1,31 +1,31 @@
-const mongoose = require("mongoose");
+    const mongoose = require("mongoose");
 
-const contactSchema = new mongoose.Schema({
-    contactId: {
-        type: String,
-        required: true,
-        unique: true
-    },
+    const contactSchema = new mongoose.Schema({
+        contactId: {
+            type: String,
+            required: true,
+            unique: true
+        },
 
-    name: {
-        type: String,
-        required: true
-    },
+        name: {
+            type: String,
+            required: true
+        },
 
-    phone: {
-        type: String,
-        required: true,
-        match: /^[0-9]{10}$/
-    },
+        phone: {
+            type: String,
+            required: true,
+            match: /^[0-9]{10}$/
+        },
 
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    }
-});
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        }
+    });
 
-const Contact = mongoose.model("Contact", contactSchema);
+    const Contact = mongoose.model("Contact", contactSchema);
 
-module.exports = Contact;
+    module.exports = Contact;
