@@ -7,12 +7,24 @@ const Contact = require("./models/Contact");
 
 const app = express();
 
+// =========================
 // Middleware
-app.use(cors());
+// =========================
+
+// Allow requests from ByteXL and other frontend applications
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
 
+// =========================
 // MongoDB Connection
+// =========================
+
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => {
@@ -23,19 +35,25 @@ mongoose
     });
 
 
+// =========================
 // Home Route
+// =========================
+
 app.get("/", (req, res) => {
     res.status(200).json({
-        message: "Contact Management API is running"
+        message: "Contact Management API is running",
+        status: "success"
     });
 });
 
 
+// =========================
 // POST /contacts
-// Create a new contact
+// Create Contact
+// =========================
+
 app.post("/contacts", async (req, res) => {
     try {
-
         const contact = new Contact(req.body);
 
         const savedContact = await contact.save();
@@ -46,7 +64,6 @@ app.post("/contacts", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(400).json({
             message: "Error creating contact",
             error: error.message
@@ -55,11 +72,13 @@ app.post("/contacts", async (req, res) => {
 });
 
 
+// =========================
 // GET /contacts
-// Get all contacts
+// Get All Contacts
+// =========================
+
 app.get("/contacts", async (req, res) => {
     try {
-
         const contacts = await Contact.find();
 
         res.status(200).json({
@@ -68,7 +87,6 @@ app.get("/contacts", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(500).json({
             message: "Error fetching contacts",
             error: error.message
@@ -77,11 +95,13 @@ app.get("/contacts", async (req, res) => {
 });
 
 
+// =========================
 // GET /contacts/:id
-// Get contact by MongoDB ID
+// Get Single Contact
+// =========================
+
 app.get("/contacts/:id", async (req, res) => {
     try {
-
         const contact = await Contact.findById(req.params.id);
 
         if (!contact) {
@@ -95,7 +115,6 @@ app.get("/contacts/:id", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(400).json({
             message: "Invalid contact ID",
             error: error.message
@@ -104,11 +123,13 @@ app.get("/contacts/:id", async (req, res) => {
 });
 
 
+// =========================
 // PUT /contacts/:id
-// Update contact
+// Update Contact
+// =========================
+
 app.put("/contacts/:id", async (req, res) => {
     try {
-
         const updatedContact = await Contact.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -130,7 +151,6 @@ app.put("/contacts/:id", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(400).json({
             message: "Error updating contact",
             error: error.message
@@ -139,11 +159,13 @@ app.put("/contacts/:id", async (req, res) => {
 });
 
 
+// =========================
 // DELETE /contacts/:id
-// Delete contact
+// Delete Contact
+// =========================
+
 app.delete("/contacts/:id", async (req, res) => {
     try {
-
         const deletedContact = await Contact.findByIdAndDelete(
             req.params.id
         );
@@ -160,7 +182,6 @@ app.delete("/contacts/:id", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(400).json({
             message: "Error deleting contact",
             error: error.message
@@ -169,7 +190,10 @@ app.delete("/contacts/:id", async (req, res) => {
 });
 
 
-// Handle unknown routes
+// =========================
+// Unknown Route Handler
+// =========================
+
 app.use((req, res) => {
     res.status(404).json({
         message: "Route not found"
@@ -177,7 +201,10 @@ app.use((req, res) => {
 });
 
 
+// =========================
 // Start Server
+// =========================
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
